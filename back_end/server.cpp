@@ -10,6 +10,8 @@
 #include <stdlib.h>
 
 #include "server_base.h"
+#include "psql.h"
+#include "msg.h"
 
 const char* sim_IP = "10.236.48.17";
 const char* sim_PORT = "23456";
@@ -25,7 +27,7 @@ int main(int argc, char* argv[]){
   int wh_count = atoi(argv[3]);
 
   // connect to database
-  // connection* C = create_connection();
+  connection* C = create_connection();
   
   
   // connect to sim
@@ -36,6 +38,15 @@ int main(int argc, char* argv[]){
   set_hints(&hints);
   get_addr_info(&hints, &servinfo, &rv, sim_PORT, sim_IP);  
   connect_sock(&servinfo, sockfd,  s);
+
+  // send Aconnect to sim & recv Aconnected
+  google::protobuf::io::FileOutputStream * sim_out = new google::protobuf::io::FileOutputStream(sockfd);
+  google::protobuf::io::FileInputStream * sim_in = new google::protobuf::io::FileInputStream(sockfd);
+
+  /* Aconnect and Aconnected with sim*/
+  if(!send_AConnect_recv_AConnected(worldid, sim_out, sim_in)){
+    printf("send AConnect receive AConnected failed\n");
+  }
 
 
   
@@ -63,5 +74,13 @@ int main(int argc, char* argv[]){
     new_fd = accept_sock(sockfd_server, their_addr_server);
   }
 
+  // send Aconnect to sim & recv Aconnected
+  google::protobuf::io::FileOutputStream * UPS_out = new google::protobuf::io::FileOutputStream(new_fd);
+  google::protobuf::io::FileInputStream * UPS_in = new google::protobuf::io::FileInputStream(new_fd);
+  
+  if(!send_UConnect_recv_UConnected(worldid, UPS_out, UPS_in)){
+    printf("send UConnect receive UConnected failed\n");
+  }
+  
   return 0;
 }
